@@ -15,8 +15,8 @@ type operationAuctionGetOffers struct {
 	EnchantmentLevel string   `mapstructure:"8"`
 	ItemIds          []uint16 `mapstructure:"6"`
 	MaxResults       uint32   `mapstructure:"9"`
-	Offset           int   `mapstructure:"10"`
-	IsDescOrder int      `mapstructure:"11"`
+	Offset           int      `mapstructure:"10"`
+	IsDescOrder      int      `mapstructure:"11"`
 }
 
 func (op operationAuctionGetOffers) Process(state *albionState) {
