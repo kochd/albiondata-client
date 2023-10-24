@@ -41,14 +41,17 @@ func (op operationAuctionGetOffersResponse) Process(state *albionState) {
 		return
 	}
 
-	if !state.MarketBrowserAsc {
-		log.Debug("MarketBrowser: Ignoring because of DESC order")
-		return
-	}
+	// Dont do this for Caerleon, Black Market (behaves differently e.g. DESC is the default)
+	if state.LocationId != 3003 {
+		if !state.MarketBrowserAsc {
+			log.Debug("MarketBrowser: Ignoring because of DESC order")
+			return
+		}
 
-	if state.MarketBrowserOffset != 0 {
-		log.Debug("MarketBrowser: Ignoring because not 1st page")
-		return
+		if state.MarketBrowserOffset != 0 {
+			log.Debug("MarketBrowser: Ignoring because not 1st page")
+			return
+		}
 	}
 
 	var orders []*lib.MarketOrder
