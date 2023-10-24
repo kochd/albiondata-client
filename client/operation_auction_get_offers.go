@@ -15,11 +15,19 @@ type operationAuctionGetOffers struct {
 	EnchantmentLevel string   `mapstructure:"8"`
 	ItemIds          []uint16 `mapstructure:"6"`
 	MaxResults       uint32   `mapstructure:"9"`
-	IsAscendingOrder bool     `mapstructure:"12"`
+	Offset           int   `mapstructure:"10"`
+	IsDescOrder int      `mapstructure:"11"`
 }
 
 func (op operationAuctionGetOffers) Process(state *albionState) {
 	log.Debug("Got AuctionGetOffers operation...")
+	state.MarketBrowserOffset = op.Offset
+	if op.IsDescOrder == 1 {
+		state.MarketBrowserAsc = false
+	} else {
+		state.MarketBrowserAsc = true
+	}
+	log.Tracef("MarketBrowser: MarketBrowserAsc: %s | Offset: %s", state.MarketBrowserAsc, state.MarketBrowserOffset)
 }
 
 type operationAuctionGetOffersResponse struct {
@@ -30,6 +38,16 @@ func (op operationAuctionGetOffersResponse) Process(state *albionState) {
 	log.Debug("Got response to AuctionGetOffers operation...")
 
 	if !state.IsValidLocation() {
+		return
+	}
+
+	if !state.MarketBrowserAsc {
+		log.Debug("MarketBrowser: Ignoring because of DESC order")
+		return
+	}
+
+	if !state.MarketBrowserOffset != 0 {
+		log.Debug("MarketBrowser: Ignoring because not 1st page")
 		return
 	}
 
