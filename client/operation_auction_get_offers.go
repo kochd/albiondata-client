@@ -46,7 +46,7 @@ func (op operationAuctionGetOffersResponse) Process(state *albionState) {
 		return
 	}
 
-	if !state.MarketBrowserOffset != 0 {
+	if state.MarketBrowserOffset != 0 {
 		log.Debug("MarketBrowser: Ignoring because not 1st page")
 		return
 	}
