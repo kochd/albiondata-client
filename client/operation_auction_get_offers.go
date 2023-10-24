@@ -22,10 +22,10 @@ type operationAuctionGetOffers struct {
 func (op operationAuctionGetOffers) Process(state *albionState) {
 	log.Debug("Got AuctionGetOffers operation...")
 	state.MarketBrowserOffset = op.Offset
-	if op.IsDescOrder == 1 {
-		state.MarketBrowserAsc = false
-	} else {
+	if op.IsDescOrder == 0 {
 		state.MarketBrowserAsc = true
+	} else {
+		state.MarketBrowserAsc = false
 	}
 	log.Tracef("MarketBrowser: MarketBrowserAsc: %s | Offset: %s", state.MarketBrowserAsc, state.MarketBrowserOffset)
 }
