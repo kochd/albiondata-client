@@ -51,9 +51,10 @@ func (state albionState) IsValidLocation() bool {
 	return true
 }
 
-func (state albionState) GetServerID() int {
+func (state albionState) GetServer() (int, string) {
 	// default to 0
 	var serverID = 0
+	var AODataIngestBaseURL = ""
 
 	// if we happen to have a server id stored in state, lets re-default to that
 	if state.AODataServerID != 0 {
@@ -67,24 +68,24 @@ func (state albionState) GetServerID() int {
 		// west server class c ip range
 		serverID = 1
 		isAlbionIP = true
-		state.AODataIngestBaseURL = "http+pow://pow.west.albion-online-data.com"
+		AODataIngestBaseURL = "http+pow://pow.west.albion-online-data.com"
 	} else if strings.HasPrefix(state.GameServerIP, "5.45.187.") {
 		// east server class c ip range
 		isAlbionIP = true
 		serverID = 2
-		state.AODataIngestBaseURL = "http+pow://pow.east.albion-online-data.com"
+		AODataIngestBaseURL = "http+pow://pow.east.albion-online-data.com"
 	} else if strings.HasPrefix(state.GameServerIP, "193.169.238.") {
 		// eu server class c ip range
 		isAlbionIP = true
 		serverID = 3
-		state.AODataIngestBaseURL = "http+pow://pow.europe.albion-online-data.com"
+		AODataIngestBaseURL = "http+pow://pow.europe.albion-online-data.com"
 	}
 
 	// if this was a known albion online server ip, then let's log it
 	if isAlbionIP {
-		log.Tracef("Using %v for PublicIngestBaseUrls", state.AODataIngestBaseURL)
 		log.Tracef("Returning Server ID %v (ip src: %v)", serverID, state.GameServerIP)
+		log.Tracef("Returning AODataIngestBaseURL %v (ip src: %v)", AODataIngestBaseURL, state.GameServerIP)
 	}
 
-	return serverID
+	return serverID, AODataIngestBaseURL
 }
