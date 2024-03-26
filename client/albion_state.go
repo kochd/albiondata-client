@@ -70,6 +70,10 @@ func (state albionState) GetServerID() int {
 		// east server class c ip range
 		isAlbionIP = true
 		serverID = 2
+	} else if strings.HasPrefix(state.GameServerIP, "193.169.238.") {
+		// eu server class c ip range
+		isAlbionIP = true
+		serverID = 3
 	}
 
 	// determine if the ConfigGlobal.PublicIngestBaseUrls contains either default east/west
