@@ -68,6 +68,9 @@ func sendMsgToPublicUploaders(upload interface{}, topic string, state *albionSta
 
 
 	var publicUploaders = createUploaders(strings.Split(PublicIngestBaseUrls, ","))
+	if len(publicUploaders) == 0 {
+		log.Warn("There are no public uploaders")
+	}
 	var privateUploaders = createUploaders(strings.Split(ConfigGlobal.PrivateIngestBaseUrls, ","))
 
 	sendMsgToUploaders(data, topic, publicUploaders, state)
