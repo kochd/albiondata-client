@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/broderickhyman/albiondata-client/log"
+	"github.com/ao-data/albiondata-client/log"
 
 	"github.com/mattn/go-colorable"
 	"github.com/sirupsen/logrus"
@@ -37,9 +37,10 @@ type config struct {
 	PrivateIngestBaseUrls          string
 	PublicIngestBaseUrls           string
 	NoCPULimit                     bool
+	PrintVersion                   bool
 }
 
-//config global config data
+// config global config data
 var ConfigGlobal = &config{
 	LogLevel: "INFO",
 }
@@ -54,11 +55,19 @@ func (config *config) SetupFlags() {
 	if config.OfflinePath != "" {
 		config.Offline = true
 		config.DisableUpload = true
+
+		if config.PublicIngestBaseUrls == "http+pow://west.aodp.local:3000" {
+			config.DisableUpload = false
+		}
+
+		log.Infof("config.PublicIngestBaseUrls: %v", config.PublicIngestBaseUrls)
+		log.Infof("config.DisableUpload: %v", config.DisableUpload)
 	}
 
 	if config.DisableUpload {
 		log.Info("Upload is disabled.")
 	}
+
 	config.setupLogs()
 }
 
@@ -78,6 +87,13 @@ func (config *config) setupWebsocketFlags() {
 }
 
 func (config *config) setupDebugFlags() {
+	flag.BoolVar(
+		&config.PrintVersion,
+		"version",
+		false,
+		"Print version, then close.",
+	)
+
 	flag.BoolVar(
 		&config.Debug,
 		"debug",
@@ -148,7 +164,7 @@ func (config *config) setupCommonFlags() {
 		&config.ListenDevices,
 		"l",
 		"",
-		"Listen on this comma separated devices instead of all available",
+		"Listen on this comma separated devices instead of all available. (Windows: Use MAC-Address, Linux: Use interface name)",
 	)
 
 	flag.BoolVar(
@@ -175,15 +191,15 @@ func (config *config) setupCommonFlags() {
 	flag.StringVar(
 		&config.PublicIngestBaseUrls,
 		"i",
-		"http+pow://www.albion-online-data.com:4223",
-		"Base URL to send PUBLIC data to, can be 'nats://', 'http://' or 'noop' and can have multiple uploaders. Comma separated.",
+		"https+pow://albion-online-data.com",
+		"Base URL to send PUBLIC data to, can be 'nats://', 'http://', 'https://' or 'noop' and can have multiple uploaders. Comma separated.",
 	)
 
 	flag.StringVar(
 		&config.PrivateIngestBaseUrls,
 		"p",
 		"",
-		"Base URL to send PRIVATE data to, can be 'nats://', 'http://' or 'noop' and can have multiple uploaders. Comma separated.",
+		"Base URL to send PRIVATE data to, can be 'nats://', 'http://', 'https://' or 'noop' and can have multiple uploaders. Comma separated.",
 	)
 
 	flag.StringVar(

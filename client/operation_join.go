@@ -2,17 +2,18 @@ package client
 
 import (
 	"strconv"
+	"strings"
 
-	"github.com/broderickhyman/albiondata-client/lib"
-	"github.com/broderickhyman/albiondata-client/log"
+	"github.com/ao-data/albiondata-client/lib"
+	"github.com/ao-data/albiondata-client/log"
 )
 
 type operationJoinResponse struct {
 	CharacterID   lib.CharacterID `mapstructure:"1"`
 	CharacterName string          `mapstructure:"2"`
 	Location      string          `mapstructure:"8"`
-	GuildID       lib.CharacterID `mapstructure:"47"`
-	GuildName     string          `mapstructure:"52"`
+	GuildID       lib.CharacterID `mapstructure:"53"`
+	GuildName     string          `mapstructure:"57"`
 }
 
 //CharacterPartsJSON string          `mapstructure:"6"`
@@ -24,6 +25,16 @@ func (op operationJoinResponse) Process(state *albionState) {
 	// Reset the AODataServerID here. This leads to a fresh execution
 	// of SetServerID() incase the player switched servers
 	state.AODataServerID = 0
+
+	// Hack for second caerleon marketplace
+	if strings.HasSuffix(op.Location, "-Auction2") {
+		op.Location = strings.Replace(op.Location, "-Auction2", "", -1)
+	}
+
+	// Allow for smugglers rest locations markets to be parsed by setting a valid location int
+	if strings.HasPrefix(op.Location, "BLACKBANK-") {
+		op.Location = strings.Replace(op.Location, "BLACKBANK-", "", -1)
+	}
 
 	loc, err := strconv.Atoi(op.Location)
 	if err != nil {

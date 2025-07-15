@@ -6,14 +6,11 @@ import (
 
 	"strings"
 
-	"github.com/broderickhyman/albiondata-client/lib"
-	"github.com/broderickhyman/albiondata-client/log"
+	"github.com/ao-data/albiondata-client/lib"
+	"github.com/ao-data/albiondata-client/log"
 )
 
-type dispatcher struct {
-	publicUploaders  []uploader
-	privateUploaders []uploader
-}
+type dispatcher struct{}
 
 var (
 	wsHub *WSHub
@@ -21,10 +18,7 @@ var (
 )
 
 func createDispatcher() {
-	dis = &dispatcher{
-		publicUploaders:  createUploaders(strings.Split(ConfigGlobal.PublicIngestBaseUrls, ",")),
-		privateUploaders: createUploaders(strings.Split(ConfigGlobal.PrivateIngestBaseUrls, ",")),
-	}
+	dis = &dispatcher{}
 
 	if ConfigGlobal.EnableWebsockets {
 		wsHub = newHub()
@@ -44,9 +38,9 @@ func createUploaders(targets []string) []uploader {
 			continue
 		}
 
-		if target[0:8] == "http+pow" {
+		if target[0:8] == "http+pow" ||  target[0:9] == "https+pow" {
 			uploaders = append(uploaders, newHTTPUploaderPow(target))
-		} else if target[0:4] == "http" {
+		} else if target[0:4] == "http" || target[0:5] == "https" {
 			uploaders = append(uploaders, newHTTPUploader(target))
 		} else if target[0:4] == "nats" {
 			uploaders = append(uploaders, newNATSUploader(target))
@@ -58,15 +52,25 @@ func createUploaders(targets []string) []uploader {
 	return uploaders
 }
 
-func sendMsgToPublicUploaders(upload interface{}, topic string, state *albionState) {
+func sendMsgToPublicUploaders(upload interface{}, topic string, state *albionState, identifier string) {
 	data, err := json.Marshal(upload)
 	if err != nil {
 		log.Errorf("Error while marshalling payload for %v: %v", err, topic)
 		return
 	}
 
-	sendMsgToUploaders(data, topic, dis.publicUploaders, state)
-	sendMsgToUploaders(data, topic, dis.privateUploaders, state)
+	var PublicIngestBaseUrls = ConfigGlobal.PublicIngestBaseUrls
+	// http+pow://albion-online-data.com is used as a magic placeholder for every realm there is
+	if strings.Contains(ConfigGlobal.PublicIngestBaseUrls, "https+pow://albion-online-data.com") {
+		// we replace the placeholder with the correct one based on the serverID from albionState
+		PublicIngestBaseUrls = strings.Replace(PublicIngestBaseUrls, "https+pow://albion-online-data.com", state.AODataIngestBaseURL, -1)
+	}
+
+	var publicUploaders = createUploaders(strings.Split(PublicIngestBaseUrls, ","))
+	var privateUploaders = createUploaders(strings.Split(ConfigGlobal.PrivateIngestBaseUrls, ","))
+
+	sendMsgToUploaders(data, topic, publicUploaders, state, identifier)
+	sendMsgToUploaders(data, topic, privateUploaders, state, identifier)
 
 	// If websockets are enabled, send the data there too
 	if ConfigGlobal.EnableWebsockets {
@@ -74,7 +78,7 @@ func sendMsgToPublicUploaders(upload interface{}, topic string, state *albionSta
 	}
 }
 
-func sendMsgToPrivateUploaders(upload lib.PersonalizedUpload, topic string, state *albionState) {
+func sendMsgToPrivateUploaders(upload lib.PersonalizedUpload, topic string, state *albionState, identifier string) {
 	if ConfigGlobal.DisableUpload {
 		log.Info("Upload is disabled.")
 		return
@@ -96,8 +100,9 @@ func sendMsgToPrivateUploaders(upload lib.PersonalizedUpload, topic string, stat
 		return
 	}
 
-	if len(dis.privateUploaders) > 0 {
-		sendMsgToUploaders(data, topic, dis.privateUploaders, state)
+	var privateUploaders = createUploaders(strings.Split(ConfigGlobal.PrivateIngestBaseUrls, ","))
+	if len(privateUploaders) > 0 {
+		sendMsgToUploaders(data, topic, privateUploaders, state, identifier)
 	}
 
 	// If websockets are enabled, send the data there too
@@ -106,14 +111,14 @@ func sendMsgToPrivateUploaders(upload lib.PersonalizedUpload, topic string, stat
 	}
 }
 
-func sendMsgToUploaders(msg []byte, topic string, uploaders []uploader,  state *albionState) {
+func sendMsgToUploaders(msg []byte, topic string, uploaders []uploader, state *albionState, identifier string) {
 	if ConfigGlobal.DisableUpload {
 		log.Info("Upload is disabled.")
 		return
 	}
 
 	for _, u := range uploaders {
-		u.sendToIngest(msg, topic, state)
+		u.sendToIngest(msg, topic, state, identifier)
 	}
 }
 

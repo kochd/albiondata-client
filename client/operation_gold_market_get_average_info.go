@@ -1,8 +1,9 @@
 package client
 
 import (
-	"github.com/broderickhyman/albiondata-client/lib"
-	"github.com/broderickhyman/albiondata-client/log"
+	"github.com/ao-data/albiondata-client/lib"
+	"github.com/ao-data/albiondata-client/log"
+	uuid "github.com/nu7hatch/gouuid"
 )
 
 type operationGoldMarketGetAverageInfo struct {
@@ -25,6 +26,7 @@ func (op operationGoldMarketGetAverageInfoResponse) Process(state *albionState) 
 		TimeStamps: op.TimeStamps,
 	}
 
-	log.Info("Sending gold prices to ingest")
-	sendMsgToPublicUploaders(upload, lib.NatsGoldPricesIngest, state)
+	identifier, _ := uuid.NewV4()
+	log.Infof("Sending gold prices to ingest (Identifier: %s)", identifier)
+	sendMsgToPublicUploaders(upload, lib.NatsGoldPricesIngest, state, identifier.String())
 }

@@ -4,12 +4,13 @@ import (
 	"sort"
 	"time"
 
-	"github.com/broderickhyman/albiondata-client/lib"
-	"github.com/broderickhyman/albiondata-client/log"
+	"github.com/ao-data/albiondata-client/lib"
+	"github.com/ao-data/albiondata-client/log"
+	uuid "github.com/nu7hatch/gouuid"
 )
 
 type operationAuctionGetItemAverageStats struct {
-	ItemID      uint32        `mapstructure:"1"`
+	ItemID      int32         `mapstructure:"1"`
 	Quality     uint8         `mapstructure:"2"`
 	Timescale   lib.Timescale `mapstructure:"3"`
 	Enchantment uint32        `mapstructure:"4"`
@@ -18,8 +19,20 @@ type operationAuctionGetItemAverageStats struct {
 
 func (op operationAuctionGetItemAverageStats) Process(state *albionState) {
 	var index = op.MessageID % CacheSize
+
+	// It seems all items with id 129-256 come through as a negative integer. Example, goose eggs
+	// comes through as -121. (-121)+256=135. As of today (2024-01-07), the itemId in the ao-bin-dumps repo
+	// is 135. This occurs for all items we can search the market for with english text from id 128-256.
+	// Anything 128 and below or 256 and greater seem to work just fine. - phendryx 2024-01-07
+	var itemId = op.ItemID
+	if itemId < 0 && itemId > -129 {
+		itemId = itemId + 256
+	} else {
+		itemId = op.ItemID
+	}
+
 	mhInfo := marketHistoryInfo{
-		albionId:  op.ItemID,
+		albionId:  itemId,
 		timescale: op.Timescale,
 		quality:   op.Quality,
 	}
@@ -77,6 +90,7 @@ func (op operationAuctionGetItemAverageStatsResponse) Process(state *albionState
 		Histories:    histories,
 	}
 
-	log.Infof("Sending %d item average stats to ingest for albionID %d", len(histories), mhInfo.albionId)
-	sendMsgToPublicUploaders(upload, lib.NatsMarketHistoriesIngest, state)
+	identifier, _ := uuid.NewV4()
+	log.Infof("Sending %d market history item average stats to ingest for albionID %d (Identifier: %s)", len(histories), mhInfo.albionId, identifier)
+	sendMsgToPublicUploaders(upload, lib.NatsMarketHistoriesIngest, state, identifier.String())
 }

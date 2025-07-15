@@ -7,14 +7,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"runtime"
-	"strings"
-	"io/ioutil"
 	"strconv"
+	"strings"
 
-	"github.com/broderickhyman/albiondata-client/log"
+	"github.com/ao-data/albiondata-client/log"
 )
 
 type httpUploaderPow struct {
@@ -39,8 +39,11 @@ func newHTTPUploaderPow(url string) uploader {
 		runtime.GOMAXPROCS(procs)
 	}
 
+	url = strings.Replace(url, "https+pow", "https", -1)
+	url = strings.Replace(url, "http+pow", "http", -1)
+
 	return &httpUploaderPow{
-		baseURL:   strings.Replace(url, "http+pow", "http", -1),
+		baseURL:   url,
 		transport: &http.Transport{},
 	}
 }
@@ -75,30 +78,34 @@ func (u *httpUploaderPow) getPow(target interface{}) {
 // Prooves to the server that a pow was solved by submitting
 // the pow's key, the solution and a nats msg as a POST request
 // the topic becomes part of the URL
-func (u *httpUploaderPow) uploadWithPow(pow Pow, solution string, natsmsg []byte, topic string, serverid int) {
+func (u *httpUploaderPow) uploadWithPow(pow Pow, solution string, natsmsg []byte, topic string, serverid int, identifier string) {
 
 	fullURL := u.baseURL + "/pow/" + topic
 
 	client := &http.Client{}
 	data := url.Values{
-		"key":      {pow.Key},
-		"solution": {solution},
-		"serverid": {strconv.Itoa(serverid)},
-		"natsmsg":  {string(natsmsg)},
+		"key":        {pow.Key},
+		"solution":   {solution},
+		"serverid":   {strconv.Itoa(serverid)},
+		"natsmsg":    {string(natsmsg)},
+		"identifier": {string(identifier)},
 	}
 	req, _ := http.NewRequest("POST", fullURL, strings.NewReader(data.Encode()))
 	req.Header.Add("User-Agent", fmt.Sprintf("albiondata-client/%v", version))
 	resp, err := client.Do(req)
-	defer resp.Body.Close()
 
 	if err != nil {
 		log.Errorf("Error while prooving pow: %v", err)
 		return
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil { log.Fatal(err) }
+		if err != nil {
+			log.Fatal(err)
+		}
 		log.Errorf("HTTP Error while prooving pow. returned: %v (%v)", resp.StatusCode, string(body))
 		return
 	}
@@ -140,14 +147,9 @@ func solvePow(pow Pow) string {
 	return solution
 }
 
-func (u *httpUploaderPow) sendToIngest(body []byte, topic string, state *albionState) {
-	if state.AODataServerID != 1 {
-		log.Warningf("Only gamesserver 1 (Washington, D.C.) is supported for now. You are connected to %v and your updates will be ignored.", state.AODataServerID)
-		return
-	}
-
+func (u *httpUploaderPow) sendToIngest(body []byte, topic string, state *albionState, identifier string) {
 	pow := Pow{}
 	u.getPow(&pow)
 	solution := solvePow(pow)
-	u.uploadWithPow(pow, solution, body, topic, state.AODataServerID)
+	u.uploadWithPow(pow, solution, body, topic, state.AODataServerID, identifier)
 }

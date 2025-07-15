@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/broderickhyman/albiondata-client/lib"
-	"github.com/broderickhyman/albiondata-client/log"
+	"github.com/ao-data/albiondata-client/lib"
+	"github.com/ao-data/albiondata-client/log"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -26,6 +26,7 @@ func decodeRequest(params map[uint8]interface{}) (operation operation, err error
 		operation = &operationAuctionGetItemAverageStats{}
 	case opGetClusterMapInfo:
 		operation = &operationGetClusterMapInfo{}
+	// case opGoldMarketGetAverageInfo:
 	case opGoldMarketGetAverageInfo:
 		operation = &operationGoldMarketGetAverageInfo{}
 	case opRealEstateGetAuctionData:
@@ -65,6 +66,7 @@ func decodeResponse(params map[uint8]interface{}) (operation operation, err erro
 		operation = &operationReadMail{}
 	case opGetClusterMapInfo:
 		operation = &operationGetClusterMapInfoResponse{}
+	// case opGoldMarketGetAverageInfo:
 	case opGoldMarketGetAverageInfo:
 		operation = &operationGoldMarketGetAverageInfoResponse{}
 	case opRealEstateGetAuctionData:

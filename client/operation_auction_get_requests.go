@@ -3,8 +3,9 @@ package client
 import (
 	"encoding/json"
 
-	"github.com/broderickhyman/albiondata-client/lib"
-	"github.com/broderickhyman/albiondata-client/log"
+	"github.com/ao-data/albiondata-client/lib"
+	"github.com/ao-data/albiondata-client/log"
+	uuid "github.com/nu7hatch/gouuid"
 )
 
 type operationAuctionGetRequestsResponse struct {
@@ -40,6 +41,7 @@ func (op operationAuctionGetRequestsResponse) Process(state *albionState) {
 		Orders: orders,
 	}
 
-	log.Infof("Sending %d market requests to ingest", len(orders))
-	sendMsgToPublicUploaders(upload, lib.NatsMarketOrdersIngest, state)
+	identifier, _ := uuid.NewV4()
+	log.Infof("Sending %d live market buy orders to ingest (Identifier: %s)", len(orders), identifier)
+	sendMsgToPublicUploaders(upload, lib.NatsMarketOrdersIngest, state, identifier.String())
 }
