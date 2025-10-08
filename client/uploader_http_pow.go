@@ -1,7 +1,7 @@
 package client
 
 import (
-	"crypto/rand"
+	"math/rand/v2"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -15,6 +15,8 @@ import (
 
 	"github.com/ao-data/albiondata-client/log"
 )
+
+const hexChars = "0123456789abcdef"
 
 type httpUploaderPow struct {
 	baseURL   string
@@ -114,9 +116,11 @@ func (u *httpUploaderPow) uploadWithPow(pow Pow, solution string, natsmsg []byte
 
 // Generates a random hex string e.g.: faa2743d9181dca5
 func randomHex(n int) string {
-    b := make([]byte, n)
-    rand.Read(b)
-    return hex.EncodeToString(b)
+	b := make([]byte, n)
+	for i := range b {
+	        b[i] = hexChars[rand.IntN(16)]
+	}
+	return string(b)
 }
 
 // Solves a pow looping through possible solutions
